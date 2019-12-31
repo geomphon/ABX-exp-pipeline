@@ -1,0 +1,44 @@
+#!/usr/bin/env Rscript
+
+# distance_pairs_to_triplets.Rscript
+#
+# Reshape pair-based distance file to triplets.
+#
+# Author: Ewan Dunbar
+
+`%>%` <- magrittr::`%>%`
+
+ARGS <- commandArgs(TRUE)
+
+# Input: pair file
+INPUT <- ARGS[1] 
+
+# Output: triplet file
+OUTPUT <- ARGS[2]
+
+# This is used internally (see below), and is by no means guaranteed to be
+# safe.
+SAFE_SEPARATOR <- "::%_%::" 
+
+pairs <- readr::read_csv(INPUT, col_types=readr::cols())
+
+# Save the original sequence of columns associated with either a 'target' or
+# an 'other' element of the triplets (i.e., the variables to spread in the
+# wide version)
+element_2_colnames <- pairs %>%
+  dplyr::select(distance, tidyselect::ends_with("_2")) %>%
+  names
+
+pairs %>%
+  dplyr::rename_all(function(x) sub("_1", "_X", x)) %>%
+  tidyr::unite(ELEMENT_2_COLUMNS, element_2_colnames, sep=SAFE_SEPARATOR) %>%
+  tidyr::spread(target_other, ELEMENT_2_COLUMNS) %>%
+  tidyr::separate(TGT, element_2_colnames, sep=SAFE_SEPARATOR, convert=TRUE) %>%
+  dplyr::rename_all(function(x) sub("_2", "_TGT", x)) %>%
+  dplyr::rename(distance_TGT=distance) %>%
+  tidyr::separate(OTH, element_2_colnames, sep=SAFE_SEPARATOR, convert=TRUE) %>%
+  dplyr::rename_all(function(x) sub("_2", "_OTH", x)) %>%
+  dplyr::rename(distance_OTH=distance) %>%
+  readr::write_csv(OUTPUT)
+
+
