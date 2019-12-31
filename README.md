@@ -74,18 +74,18 @@ For stimuli creation:
 1) folder of .wav files 
 2) folder of .textGrid files, with names that match the .wav files exactly. 
 
-		Naming conventions for textGrid and .wavs :
+Naming conventions for textGrid and .wavs :
 		 In order to ensure that stimuli are always cross-gender, you must specify the gender of the speaker.   If the speaker is male, the first character of the .wav and .texgrid associated must be M. (F for female). If not, the design script  won't run properly.   
 		 Ex : a female speaker name Katie must have both following files : FKatie.wav , FKatie.textgrid
 
-		 Textgrid format:  You must have a tier name "word", in which only the words you want to work on are marked. Right now, the script assumes that you have three and only three instances of each word per .wav.  ( You can change this in the script stimlist/generate_design.py)
+Textgrid format:  You must have a tier name "word", in which only the words you want to work on are marked. Right now, the script assumes that you have three and only three instances of each word per .wav.  ( You can change this in the script stimlist/generate_design.py)
 
 3) phoneme_info.csv
 
-This is a .csv file with three columns that lists the Label, language, and Phoneme for each label in the textgrids. in our data. Note that if a phone is marked "NA" in the language column it will be skipped in the stimuli creation pipeline 
-		Label,Language,Phoneme
-		AKA,NA,k
-		AKHA,ENG,kʰ
+This is a .csv file with three columns that lists the Label, language, and Phoneme for each label in the textgrids. in our data. Note that if a phone is marked "NA" in the language column it will be skipped in the stimuli creation pipeline  
+		Label,Language,Phoneme 
+		AKA,NA,k  
+		AKHA,ENG,kʰ  
 
 
 
@@ -93,19 +93,20 @@ There are five parts to this pipeline.  All parts have commands in the makefile,
 
 
 ## 1. 1_stimuli 
-stimuli building, stimuli selection, and design.  
-takes as input: 
-       .wav files 
-       .text grids  
-       .csv phoneme information file (this maps the annotations in the textgrid files to phonemes)       
+stimuli building, stimuli selection, and design. 
+
+takes as input:  
+       .wav files  
+       .text grids   
+       .csv phoneme information file (this maps the annotations in the textgrid files to phonemes)  
     and then: 
-	-clips each marked interval into a separate soundfile 
-	-generates a list of all possible three-file combinations (= "triplets") 
-	-finds an optimized subset of these triplets (to save doing calculations on all of them) 
-	-caculates acoustic distances between files for each of the subset of triplets 
-	-selects the phones of interest based on the mean acoustic distance between recordings for those phones.  
+	-clips each marked interval into a separate soundfile  
+	-generates a list of all possible three-file combinations (= "triplets")  
+	-finds an optimized subset of these triplets (to save doing calculations on all of them)  
+	-caculates acoustic distances between files for each of the subset of triplets  
+	-selects the phones of interest based on the mean acoustic distance between recordings  for those phones.   
 	-optimizes a stimuli list based on the phones of interest, selects specific triplet instances.  
-	-concatenates soundfiles to create an audio file for each of the selected triplets 
+	-concatenates soundfiles to create an audio file for each of the selected triplets  
 
 
 ## 2. 2_validation
