@@ -1,0 +1,247 @@
+#Documentation for Model validation pipeline 
+#Author: Amelia 
+#Last edit: Dec 29, 2019
+
+
+included below are three types of messages:
+
+
+FIXME: problems that should be fixed before running any models 
+(only two tiny things: need to pass numbers as arguments in makefile. I assume 
+this is simple, I have just run out of time to google it)
+
+NOTES: alerting you to important points or quirks of the pipeline
+
+IMPROVE: alerting you to things which are functional, but done in a dumb way,
+for which you may want to implement a quick fix before you launch more models.  
+
+
+###################
+#Before beginning:#
+###################
+
+This pipeline takes as input a design csv (e.g. design_4each.csv) with columns 
+Phone_NOTENG,Phone_ENG,mean_dist,stat_econ,stat_loc,stat_glob.These have been
+created based on two files (files and script to merge also present)
+
+  file 1) acoustic distance file (e.g. "ac_dists_3each.csv"), which is a list of
+  acoustic distances of length number of trials. 
+
+**NOTE: these acoustic distances are simply the MEAN distance for each pair, 
+repeated the number of times indicated (3 each or 4 each, see design explanation
+below).  If you are re-running models consider adding jitter or other noise, (we
+talked about, but ultimately decided against this for this first round)**
+ 
+file 2) "hindi_scores.csv" which is a list of all the hindi sounds and their 
+geomphon scores. 
+
+There are two experiment designs  right now: 
+-"3each_216" (an experiment in which each of 9 hindi sounds is paired with 3 
+familiar sounds. those 27 pairs are each repeated 8 times for a design of length
+216 trials)
+-"4each_144"(an experiment in which each of 9 hindi sounds is paired with 4 familiar
+sounds. those 36 pairs are each repeated 4 times for a design of length 144 
+trials)
+
+**NOTE: because of the way zero models are treated separately in this pipeline,
+each of these two experiments has a separate "experiment" for running zero 
+models (3each_zeroes and 4each_zeroes). This is explained further below. 
+
+**NOTE: these designs includes only 9 sounds (number chosen as  result of the
+stimuli choice pipeline and script stimuli_selection.R). Designs do NOT include
+"ɽʱ", despite it being a good candidate based on the selection script,  because
+we didn't have the scores for it.**
+
+The script to join these files (0_combine_ac_dist_geomphon_scores.R) is hard 
+coded and is not in the makefile (and has already been run and  output files are
+present, so skip this step if you are using one of the designs already present.)
+
+
+###################################
+#Model validation- pipeline proper#
+###################################
+
+ (makefile commands in parentheses)
+
+1.) CREATE MASTER DATA FRAME  (make create_master_df) 
+arguments:
+
+-EXPERIMENT_NAME the experiment name (will be incorporated into modelfitname, 
+also determines folder save locations for sampled data and modelfits. currently,
+because of the way that zero models are treated differently, the zero models are 
+run as a separate experiment, there are  therefore four experiment names:
+4each_144, 4each_zeroes, 3each_216, and 3each_zeroes)
+
+-DATA_INSTANCE: the name of the data instance (will be incorporated into 
+modelfitname), I have been using the naming convention 
+   "dinst"+ "DATA_NUMBER" + "_" + "NUMSUBJS"+"_"+"subjs" 
+   e.g. dinst11_30subjs
+  
+-COEF_VAL: desired coefficient value (will be expanded to three coeffs: the 
+given coeff, zero, and the negative. e.g. input of 10 will yield -10,0,10)
+
+***FIXME: currently the COEF_VAL is hardcoded, because I don't know
+how to pass a number from the makefile.***
+
+
+This script creates a df of length 216, (8 models x 3predictors x 3 different 
+coeff values).
+Each line of the df specifies a modelfit 
+
+***IMPROVE: note that the stan model name exists in this df, and is now 
+irrelevant since we are using brms instead and should be removed.  Has not yet
+been removed due to lack of time (and, previously, backwards compatibility for 
+model visualizations). I believe it can be removed entirely now**
+
+
+
+1a.) MAKE ZERO MASTERS (make create_zero_master) filter a master_df and transform
+into a zero master. 
+
+arguments: 
+-MASTER_DF: The master TO BE TURNED INTO a zero master (e.g. a NON zero master
+such as "2_validation/master_dfs/master_df_4each_144_dinst11_30subjs.csv")
+-EXPERIMENT: The name of the NEW ZERO EXPERIMENT which will take the place of 
+the experiment name of the input master (e.g. 4each_zeroes)
+-DATA_INSTANCE: the same data instance as the master input as MASTER_DF (because
+the zero experiments do not have different data than the other models. They are 
+a way of running zero models on the same data sets)
+
+This script takes a full master,  filters it, adds the appropriate zero 
+filename, and creates a master df of length 27 (one zero model for each of the  
+27 coeff combinations)
+
+
+
+2.) SAMPLE DATASETS (make sample_datasets) 
+arguments: 
+
+-DESIGN_FILENAME: the name of the design file  "2_validation/design_4each.csv"# 
+-DATA_SUB_FOLDER: the general subfolder where sampled data goes 
+"2_validation/sampled_data"  
+-MASTER_DF: The name of the master_df for the data instance to be sampled (this 
+contains a column with the filenames, which includes the experiment name)
+-NUM_SUBJS: Number of subjects to sample data for.
+
+***FIXME: currently the number of subjects is hard coded, because I don't know
+how to pass a number from the makefile.***
+
+***IMPROVE: right now this script does not create, but requires,  a folder for
+the newly sampled data. Either fix this, or before running this script, add a 
+folder with name DATA_INSTANCE (e.g. dinst11_30subjs) in location 
+2_validation/sampled_data/EXPERIMENT_NAME 
+(e.g. create 2_validation/sampled_data/3each_216/dinst11_30subjs)***
+
+The script takes a master_df and samples a dataset for all the unique names in 
+the csv_filename column of the master_df.  a masterdf is specific to a data 
+instance 
+
+**NOTE the effect of acoustic distance (calculated from pilot data) is hard 
+coded in this script**
+
+**NOTE that as mentioned above I had taken to adding the number of subjects to
+the "data instance" name (dinst10_30subjs) just for clarity. (Useful to know 
+when chosing models to run since obviously more subjects = more time) BUT the 
+number of subjects is actually specified here at sampling, whereas the data 
+instance is given its name at the previous step, master df.**
+
+
+3. RUN MODELS 
+(make run_brms_mods)    OR    (make run_brms_zero_mods)
+
+as appropriate, run either run_brms_mods.R  (for any non-zero masters) OR
+run_brms_ZERO_mods.R (for any zero masters)
+
+**IMPROVE: run_brms_ZERO_mods.R is just a dumb version of run_brms_mods.R that
+has a zero model hard coded. This is because run_brms_mods.R uses the brms 
+non-linear syntax in order to effectuate the truncation, and it will break if 
+you pass it no coeffs.  Would obviously be better if both were joined in a 
+function with if logic.***
+
+as a reminder, each model .rds  is dependent on: 
+  -the experiment design 
+  -the data instance 
+  -the model applied (specified in the masterdf)
+  
+This should always be launched in a tmux from the command line  in an ssh 
+connection to humanum (not from the terminal within humanum, or from the R 
+console in humanum, both of which are more likely to break for no clear reason.) 
+Each model with 30 subjects takes on the order of 5 minutes to run. It is
+normal to get a pile of warnings when running models. After spitting out these
+warnings if it is working, it will continue to sampling within about 1 min. If
+it hangs for longer than that, something has gone wrong.
+
+**IMPROVE: there is code commented out that is supposed to re-start this
+process if it stops for no reason (which it occasionally does).  However, this 
+code itself prevented the loop from running, and has not been debugged**
+
+
+4. coeff_diffs (make calc_coeff_diffs)
+
+arguments:
+EXPERIMENT: the experiment name (e.g.  "4each_144")
+DATA_INST: the data isntance name (e.g. "dinst1_30subjs")
+SUB_FOLDER: the folder that the validation pipeline is in ="2_validation/" #
+RDS_FOLDER: the folder within SUB_FOLDER where the .rds files are saved=
+"model_fits_rds/" 
+
+
+This script requires that the brms models have been run as in step 3. 
+It reads in a master (name determined by experiment and instance input), 
+and for each modelfit it calculates the difference between the coefficient
+input in the sampling process and two different models: 
+  -first, the coeff returned by a simple glm() and the coeff on which the 
+  data was sampled
+  -second, the difference between the mean of the posterior of the brms and 
+  the coeff on which the data was sampled.  
+
+
+5. pair models for bayes factors (make create_bayes_pairs)
+arguments: 
+
+POS_MASTER  the master_df for the positive models 
+ZERO_MASTER the master_df for the matching zero models 
+PAIR_FILE   name of the output file (which will be the input of the next step)
+
+Given a matching master_df and its equivalent zero master, this creates a list 
+of pairs of interest for which we want the bayes factors.
+
+
+6. calculate bayes factors (make calc_bayes_factors)
+arguments:
+-ZERO_FOLDER: location of the zero models for the experiment of interest (an 
+experiment-specific subfolder of the .rds folder)
+-POS_FOLDER: location of the positive models for the experiment of interest (an 
+experiment-specific subfolder of the .rds folder)
+-PAIRS_FILE: The name of the pairs file created in 5. 
+"2_validation/pairs_for_bf.csv" 
+-OUT_FILE: name of the output file, which will be the same as the pairs file 
+with an additional column containing the bayes factors. 
+
+
+This actually calculates the bayes factors, and saves them in a .csv 
+
+
+#######################################
+Other things present in the folder: 
+
+FUNCTIONS:
+fn_build_brms_formula.R - called in model running step
+fn_build_brms_priors.R - called in model running step
+fn_create_masterdf_function_pos_neg.R - called in create_master_df
+fn_sample_binary_four_function.R - called in sampling script 
+fn_model_comparison_functions.R - This is a set of functions written by
+Ewan that are highly interdependent- change one function at your own risk. 
+one function here, model_fit_filename() is used in the pairs file creation 
+script. 
+
+OTHER: 
+**The .rmd coeff_diff_graphs_Dec_04.html/.Rmd provides visualizations of 
+the coeff differences, but right now is hard coded for certain datasets and not 
+updated. Essentially, it's mothballed, and included here for parts. **
+
+-.rds files with name "dups" these were the models run on the same instance of
+data with the same model, duplicated several times. Not likely of interest, but 
+present in case they are useful. 
+
+

@@ -1,0 +1,151 @@
+---
+title: Accuracy in returning sampled coefficient
+author: "Amelia"
+date: "19/10/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+This document takes as inputs the final_master_df files created by calc_coeff_diffs_glm_brms.R
+
+```{r read in data, warnings = FALSE, message = FALSE,echo=FALSE}
+
+#number of subjects depends on isntance and is hard coded 
+
+# full compelement- correct and incorrect models 
+hindi_dinst7<-readr::read_csv("final_master_hindi_dinst7.csv") # coef 10, -10, 0
+  hindi_dinst7$experiment<- "old_hindi_design"
+
+three_each<-readr::read_csv("final_master_3each_dups_dinst1_30subjs.csv") 
+  three_each$experiment<- "3_each_dups"
+  three_each$m_stanfile <- as.character(three_each$m_stanfile)
+  
+four_each<-readr::read_csv("final_master_4each_dups_dinst1_30subjs.csv") 
+  four_each$experiment<- "4_each_dups"
+  four_each$m_stanfile <- as.character(four_each$m_stanfile)
+
+
+hindi_for_hists_full<-dplyr::bind_rows(hindi_dinst7,
+                                       three_each,
+                                       four_each)
+
+hindi_for_hists <-dplyr::filter(hindi_for_hists_full,is_correct_model==TRUE)
+
+
+  
+
+```
+
+## for the subset of correct models
+
+```{r glm diffs, echo=FALSE}
+
+ggplot2::ggplot(hindi_for_hists, ggplot2::aes(x = Econ_glm_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-10,10))+
+    ggplot2::ggtitle("Econ coef differenece,hindi data,
+                                        calculated by glm, by number of subjects")+
+    ggplot2::facet_grid(experiment ~ .)
+
+
+ggplot2::ggplot(hindi_for_hists, ggplot2::aes(x = Glob_glm_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-10,10))+
+    ggplot2::ggtitle("Glob coef differenece, hindi data,
+                     calculated by glm, by number of subjects")+
+    ggplot2::facet_grid(experiment ~ .)
+
+
+ggplot2::ggplot(hindi_for_hists, ggplot2::aes(x = Loc_glm_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-10,10))+
+    ggplot2::ggtitle("Loc coef differenece, hindi data,
+                                 calculated by glm, by number of subjects")+
+    ggplot2::facet_grid(experiment ~ .)
+
+
+
+
+```
+
+## New 3 each design (three pairs per hindi phone, 216 trials) 
+
+### (returned model coef)-(input sampling coef) Faceted by whether a correct or incorrect model is applied, brms mods
+
+```{r glm diffs full mods, echo=FALSE}
+
+ggplot2::ggplot(three_each, ggplot2::aes(x = Econ_brms_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-7.5,7.5))+
+    ggplot2::ggtitle("Econ coef differenece,hindi data,
+                                        calculated by brms,")+
+    ggplot2::facet_grid(is_correct_model ~ .)
+
+
+ggplot2::ggplot(three_each, ggplot2::aes(x = Glob_brms_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-7.5,7.5))+
+    ggplot2::ggtitle("Glob coef differenece, hindi data,
+                     calculated by brms")+
+    ggplot2::facet_grid(is_correct_model ~ .)
+
+
+ggplot2::ggplot(three_each, ggplot2::aes(x = Loc_brms_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-7.5,7.5))+
+    ggplot2::ggtitle("Loc coef differenece, hindi data,
+                                 calculated by brms")+
+    ggplot2::facet_grid(is_correct_model ~ .)
+
+
+```
+
+## New 4 each design (four pairs per hindi phone, 144 trials) 
+
+### (returned model coef)-(input sampling coef) Faceted by whether a correct or incorrect model is applied, glm mods 
+```{r brms diffs full mods, echo=FALSE}
+
+ggplot2::ggplot(four_each, ggplot2::aes(x = Econ_brms_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-7.5,7.5))+
+    ggplot2::ggtitle("Econ coef differenece,hindi data,
+                                        calculated by brms,")+
+    ggplot2::facet_grid(is_correct_model ~ .)
+
+
+ggplot2::ggplot(four_each, ggplot2::aes(x = Glob_brms_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-7.5,7.5))+
+    ggplot2::ggtitle("Glob coef differenece, hindi data,
+                     calculated by brms")+
+    ggplot2::facet_grid(is_correct_model ~ .)
+
+
+ggplot2::ggplot(four_each, ggplot2::aes(x = Loc_brms_diff)) +
+    ggplot2::geom_histogram(binwidth = .1,
+                            position="identity",
+                            alpha = 0.4)+
+    ggplot2::scale_x_continuous(limits = c(-7.5,7.5))+
+    ggplot2::ggtitle("Loc coef differenece, hindi data,
+                                 calculated by brms")+
+    ggplot2::facet_grid(is_correct_model ~ .)
+
+
+```
+
