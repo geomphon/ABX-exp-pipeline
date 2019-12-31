@@ -105,26 +105,31 @@ There are five parts to this pipeline.  All parts have commands in the makefile,
 
 
 ## 1. 1_stimuli 
-#stimuli building, stimuli selection, and design. 
-       takes as input: 
-       		.wav files 
-       		.text grids 
-       		.csv phoneme information file (this maps the annotations in the textgrid files to phonemes)
+stimuli building, stimuli selection, and design. 
+takes as input: 
+       .wav files 
+       .text grids 
+       .csv phoneme information file (this maps the annotations in the textgrid files to phonemes)
     and then: 
-
 	-clips each marked interval into a separate soundfile
 	-generates a list of all possible three-file combinations (= "triplets")
-	-finds an optimized subset  of these triplets (to save doing calculations on all of them)
+	-finds an optimized subset of these triplets (to save doing calculations on all of them)
 	-caculates acoustic distances between files for each of the subset of triplets
-	-selects the phones of interest based on their average acoustic distance. 
+	-selects the phones of interest based on the mean acoustic distance between recordings for those phones. 
 	-optimizes a stimuli list based on the phones of interest, selects specific triplet instances. 
 	-concatenates soundfiles to create an audio file for each of the selected triplets
 
 
 ## 2. 2_validation
-takes the design above and tests the model used.  
+takes the design above, samples data, and uses the sampled data to test the models to be used. 
 
+This is a pipeline itself, and is documented in 2_validation/ReadMe_validation_pipeline.md. 
 
+Inputs to this pipeline are the mean acoustic distances calculated in 1_stimuli above, and the geomphon scores. 
+
+The pipeline outputs two measure of interest: 
+for a set of models, the difference between the value input as the coeffcient of the predictors of interest and the value returned by the model. 
+for a set of pairs of models, the bayes factors indicating which model is a better fit. 
 
 
 
