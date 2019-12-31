@@ -83,13 +83,13 @@ Textgrid format:  You must have a tier name "word", in which only the words you 
 3) phoneme_info.csv
 
 This is a .csv file with three columns that lists the Label, language, and Phoneme for each label in the textgrids. in our data. Note that if a phone is marked "NA" in the language column it will be skipped in the stimuli creation pipeline  
-		Label,Language,Phoneme 
+		Label,Language,Phoneme  
 		AKA,NA,k  
 		AKHA,ENG,kʰ  
 
 
 
-There are five parts to this pipeline.  All parts have commands in the makefile, and each part has a folder . 
+There are four parts to this pipeline.  All parts have commands in the makefile, and each part has a folder . 
 
 
 ## 1. 1_stimuli 
