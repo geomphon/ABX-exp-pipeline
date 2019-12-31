@@ -97,8 +97,7 @@ stimuli building, stimuli selection, and design.
 takes as input: 
        .wav files 
        .text grids  
-       .csv phoneme information file (this maps the annotations in the textgrid files to phonemes) 
-       
+       .csv phoneme information file (this maps the annotations in the textgrid files to phonemes)       
     and then: 
 	-clips each marked interval into a separate soundfile 
 	-generates a list of all possible three-file combinations (= "triplets") 
@@ -130,13 +129,12 @@ Experiments are accomplished using  our fork of LMEDS
 
 clone our fork of LMEDs, 
 then adjust the following documents: 
-	presurvey.txt. (a demographic survey for the beginning of the experiment)
-	postsurvey.txt (a post-experiment survey)
-	dictionary.txt (all strings to be shown (e.g. instructions) that are not in the surveys above must be listed in this document)
-	sequence file  (this specifies the order of how instructions, surveys, and stimuli are presented, including randomization)
+	presurvey.txt. (a demographic survey for the beginning of the experiment) 
+	postsurvey.txt (a post-experiment survey) 
+	dictionary.txt (all strings to be shown (e.g. instructions) that are not in the surveys above must be listed in this document) 
+	sequence file  (this specifies the order of how instructions, surveys, and stimuli are presented, including randomization) 
 
-
-put the entire LMEDs file on a server (or run locally, see LMEDs manual here: https://github.com/timmahrt/LMEDS
+put the entire LMEDs file on a server (or run locally, see LMEDs manual here: https://github.com/timmahrt/LMEDS) . 
 	adjust the cgi file 
 	adjust your server permissions 
 		.cgi folder should have execute permissions 
@@ -148,12 +146,12 @@ This folder contains scripts used for results anonymization and cleaning
 
 input:  
   folder of raw data downloaded from LMEDs OR folder of anonymized data 
-  download the folder of LMEDS results files from the server
+  download the folder of LMEDS results files from the server 
 
  if necessary: anonymize data 
-	change subject info using anonymize_lmeds_data_filenames.py
-	(be careful to store raw data or anonymization key in a secure locaiton (i.e. not synced to your git))
-	**NB if you are using mechanical turk workers, their worker ID will be visible, and is considered individually identifiable information**
+	change subject info using anonymize_lmeds_data_filenames.py 
+	(be careful to store raw data or anonymization key in a secure locaiton (i.e. not synced to your git)) 
+	**NB if you are using mechanical turk workers, their worker ID will be visible, and is considered individually identifiable information** 
 
 follow the makefile commands to filter data and then clean and re-format
 
