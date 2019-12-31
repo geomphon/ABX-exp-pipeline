@@ -99,7 +99,7 @@ takes as input:
        .wav files  
        .text grids   
        .csv phoneme information file (this maps the annotations in the textgrid files to phonemes)  
-    and then: 
+    and then:  
 	-clips each marked interval into a separate soundfile  
 	-generates a list of all possible three-file combinations (= "triplets")  
 	-finds an optimized subset of these triplets (to save doing calculations on all of them)  
@@ -112,7 +112,7 @@ takes as input:
 ## 2. 2_validation
 takes the design above, samples data, and uses the sampled data to test the models to be used.  
 
-This is a pipeline itself, and is documented in 2_validation/ReadMe_validation_pipeline.md.  
+This is a pipeline itself, and is documented in 2_validation/ReadMe_validation_pipeline.md. The commands are located in the toplevel Makefile (the only Makefile) 
 
 Inputs to this pipeline are the mean acoustic distances calculated in 1_stimuli above, and the geomphon scores.  
 
@@ -123,6 +123,8 @@ for a set of pairs of models, the bayes factors indicating which model is a bett
 
 
 ## 3. 3_LMEDs 
+
+This folder contains only an unworking draft of a script to adapt some of the LMEDs files asked for below. Until scripts exist, follow the directions below to run experiments by hand. 
 
 For experiment creation: 
 
