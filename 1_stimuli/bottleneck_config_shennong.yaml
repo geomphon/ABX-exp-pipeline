@@ -1,0 +1,113 @@
+bottleneck:
+  # Amount of dithering. 0.0 means no dither. Default is 0.1.
+  dither: 0.1
+  # The name of the pretrained weights used to extract the features.
+  # Must be 'BabelMulti', 'FisherMono' or 'FisherTri'. Default is
+  # BabelMulti.
+  weights: BabelMulti
+pitch:
+  # Smallest relative change in pitch that the algorithm measures.
+  # Default is 0.005.
+  delta_pitch: 0.005
+  # Cutoff frequency for low-pass filter, in Hertz. Default is 1000.0.
+  lowpass_cutoff: 1000.0
+  # Integer that determines filter width of lowpass filter. More gives
+  # sharper filter. Default is 1.
+  lowpass_filter_width: 1
+  # Maximum F0 to search for in Hertz. Default is 400.0.
+  max_f0: 400.0
+  # Minimum F0 to search for in Hertz. Default is 50.0.
+  min_f0: 50.0
+  # Increasing this factor reduces NCCF for quiet frames. This helps
+  # ensuring pitch continuity in unvoiced regions. Default is 7000.0.
+  nccf_ballast: 7000.0
+  # Cost factor for F0 change. Default is 0.1.
+  penalty_factor: 0.1
+  # Frequency that we down-sample the signal to, in Hertz. Must be
+  # more than twice lowpass_cutoff. Default is 4000.0.
+  resample_freq: 4000.0
+  # Minimum F0 to search, applied in soft way, in Hertz. Must not
+  # exceed min_f0. Default is 10.0.
+  soft_min_f0: 10.0
+  # Integer that determines filter width when upsampling NCCF. Default
+  # is 5.
+  upsample_filter_width: 5
+  postprocessing:
+    # If true, time derivative of log-pitch is added to output
+    # features. Default is true.
+    add_delta_pitch: true
+    # If true, the normalized log-pitch is added to output features.
+    # Normalization is done with POV-weighted mean subtraction over
+    # 1.5 second window. Default is true.
+    add_normalized_log_pitch: true
+    # If true, the warped NCCF is added to output features. Default is
+    # true.
+    add_pov_feature: true
+    # If true, time derivative of log-pitch is added to output
+    # features. Default is false.
+    add_raw_log_pitch: false
+    # Number of frames by which the pitch information is delayed.
+    # Default is 0.
+    delay: 0
+    # Standard deviation for noise we add to the delta log-pitch. The
+    # stddev is added before scaling. Should be about the same as
+    # delta-pitch option to pitch creation. The purpose is to get rid
+    # of peaks in the delta-pitch caused by discretization of pitch
+    # values. Default is 0.005.
+    delta_pitch_noise_stddev: 0.005
+    # Term to scale the final delta log-pitch feature. Default is
+    # 10.0.
+    delta_pitch_scale: 10.0
+    # Number of frames on each side of central frame. Default is 2.
+    delta_window: 2
+    # Left-context (in frames) for moving window normalization.
+    # Default is 75.
+    normalization_left_context: 75
+    # Right-context (in frames) for moving window normalization.
+    # Default is 75.
+    normalization_right_context: 75
+    # Scaling factor for the final normalized log-pitch value. Default
+    # is 2.0.
+    pitch_scale: 2.0
+    # This can be used to add an offset to the POV feature. Intended
+    # for use in Kaldi's online decoding as a substitute for CMV
+    # (cepstral mean normalization). Default is 0.0.
+    pov_offset: 0.0
+    # Scaling factor for final probability of voicing feature. Default
+    # is 2.0.
+    pov_scale: 2.0
+cmvn:
+  # If false, do normalization by utterance, if true do normalization
+  # by speaker
+  by_speaker: true
+  # If true do normalization only on frames where voice activity has
+  # been detected, if false do not consider voice activity for
+  # normalization
+  with_vad: true
+  # The vad options are not used if 'with_vad' is false
+  vad:
+    # Scale factor of the mean log-energy. If this is set to s, to get
+    # the actual threshold we let m be the mean log-energy of the
+    # file, and use s*m + energy_threshold. Must be greater or equal
+    # to 0. Default is 0.5.
+    energy_mean_scale: 0.5
+    # Constant term in energy threshold for MFCC0 for VAD. See also
+    # energy_mean_scale. Default is 5.0.
+    energy_threshold: 5.0
+    # Number of frames of context on each side of central frame. The
+    # size of the window for which energy is monitored is 2 *
+    # frames_context + 1. Must be greater or equal to 0. Default is 0.
+    frames_context: 0
+    # Proportion of frames beyond the energy threshold. Parameter
+    # controlling the proportion of frames within the window that need
+    # to have more energy than the threshold. Must be in ]0, 1[.
+    # Default is 0.6.
+    proportion_threshold: 0.6
+delta:
+  # Order of delta computation. Default is 2.
+  order: 2
+  # Parameter controlling window for delta computation. The actual
+  # window size for each delta order is 1 + 2 * window. The behavior
+  # at the edges is to replicate the first or last frame. Default is
+  # 2.
+  window: 2

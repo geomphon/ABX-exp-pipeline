@@ -1,0 +1,47 @@
+#!/usr/bin/env Rscript
+
+# Adds the meta-information to the item file
+# (script modified to take and produce a csv file instead)
+#
+# Author: Ewan Dunbar, Nicolas Brasset
+
+format_numeric <- function(x, ...) {
+  numeric_cols <- vapply(x, is.numeric, logical(1))
+  x[numeric_cols] <- lapply(x[numeric_cols], format,
+                              trim=TRUE, nsmall=6, ...)
+  return(x)
+}
+
+`%>%` <- magrittr::`%>%`
+
+ARGS <- commandArgs(TRUE)
+
+# Item file generated from TextGrids
+# e.g., "ABX_ITEM_FILE.csv"
+INPUT <- ARGS[1] 
+
+PHONE_INFO <- ARGS[2]
+
+# Updated item file to write
+OUTPUT <- ARGS[3] 
+
+phone_info <- readr::read_csv(PHONE_INFO, col_types=readr::cols())
+word_to_target_phone <- phone_info[["Phoneme"]]
+names(word_to_target_phone) <- phone_info[["Label"]]
+language <- phone_info[["Language"]]
+names(language) <- phone_info[["Phoneme"]]
+
+readr::read_delim(INPUT, delim=" ", col_types=readr::cols(
+    `#file` = readr::col_character(), onset = readr::col_double(),
+    offset = readr::col_double(), `#item` = readr::col_character(),
+    word = readr::col_character())) %>%
+  dplyr::mutate(speaker=(function(x)
+                          gsub("\\d+$", "", sapply(strsplit(x, "_"),
+                                            function(y) y[[1]])))(`#item`)) %>%
+  dplyr::mutate(sex=substr(speaker, 1, 1)) %>%
+  dplyr::mutate(phone=word_to_target_phone[word],
+                language=language[phone]) %>%
+  format_numeric() %>% 
+  readr::write_delim(OUTPUT, delim=",")
+
+

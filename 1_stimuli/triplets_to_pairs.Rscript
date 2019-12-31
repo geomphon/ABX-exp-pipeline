@@ -1,0 +1,32 @@
+#!/usr/bin/env Rscript
+
+# triplets_to_pairs.Rscript
+#
+# Reshape triplet file (containing _TGT, _OTH and _X columns) to be a
+# pair file (comparing all _TGT and _X and all _OTH and _X).
+#
+# Author: Ewan Dunbar
+
+`%>%` <- magrittr::`%>%`
+
+ARGS <- commandArgs(TRUE)
+
+# Input triplet file
+INPUT <- ARGS[1] 
+
+# Output pair file
+OUTPUT <- ARGS[2]
+
+stimuli <- readr::read_csv(INPUT, col_types=readr::cols())
+pair_var_basenames <- sapply(
+  strsplit(names(stimuli)[tidyselect::ends_with("_TGT", vars=names(stimuli))],
+           "_"), function(x) x[1])
+pairs <- stimuli %>% 
+  tidyr::gather(key=KEY, value=VALUE, tidyselect::ends_with("_TGT"),
+                                      tidyselect::ends_with("_OTH")) %>%
+  tidyr::extract(KEY, c("COLNAME", "target_other"), "(.*)_(.*)") %>%
+  tidyr::spread(COLNAME, VALUE) %>%
+  dplyr::rename_all(~ stringr::str_replace_all(., "_X", "_1")) %>%
+  dplyr::rename_at(dplyr::vars(pair_var_basenames),
+                   ~ paste0(., "_2"))
+readr::write_csv(pairs, OUTPUT)
