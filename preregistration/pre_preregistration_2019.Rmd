@@ -1,0 +1,686 @@
+---
+title: "Pre-pre-registration"
+author: "Ewan Dunbar, Amelia Kimball"
+date: "27/09/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+`%>%` <- magrittr::`%>%`
+```
+
+## Background
+
+[...]
+
+## Hypothesis
+
+[...]
+
+## Operationalization
+
+[...]
+
+### Method and measures
+
+[...]
+
+### Overview of design
+
+[...]
+
+## Acoustic distances
+
+### Methods
+
+[...]
+
+### Validation of acoustic distance methods
+
+We draw on three sets of ABX phone discrimination pilot data:
+
+- **Pilot-a:** Cross-linguistic (English/French) ABX phoneme experiment, lab speech, three speakers A-B-X, presented to English and French listener groups
+- **Pilot-b:** TIMIT ABX phoneme experiment, from corpus, three speakers A-B-X, presented to English and French listener groups
+- **Pilot-c:** English lab speech ABX phoneme experiment, two speakers AB-X, presented to English and French listener groups
+
+```{r load-pilot-a, include=FALSE}
+pilot_a_human <- tibble::as_tibble(read.csv("data_nika_human.csv",
+                                            row.names=1)) %>%
+  dplyr::mutate(listener_group=ifelse(subject_language.x == "eng",
+                                      "English", "French"))
+pilot_a_bottleneck <- readr::read_csv("data_nika_bottleneck.csv",
+                                      col_types=readr::cols()) %>%
+  dplyr::rename(bn_TGT=bottle_tgt_x, bn_OTH=bottle_oth_x) %>%
+  dplyr::mutate(delta_bn=bn_TGT-bn_OTH, ratio_bn=bn_TGT/bn_OTH)
+pilot_a_mfcc <- readr::read_csv("data_nika_mfcc.csv",
+                                col_types=readr::cols()) %>%
+  dplyr::rename(mfcc_TGT=mfcc_tgt_x, mfcc_OTH=mfcc_oth_x) %>%
+  dplyr::mutate(delta_mfcc=mfcc_TGT-mfcc_OTH, ratio_mfcc=mfcc_TGT/mfcc_OTH)
+pilot_a <- dplyr::left_join(pilot_a_human, pilot_a_bottleneck, 
+                            by="tripletid") %>%
+  dplyr::left_join(pilot_a_mfcc, by="tripletid")
+```
+
+```{r load-pilot-b, include=FALSE}
+pilot_b_human <- readr::read_csv("data_timit_human.csv",
+                                      col_types=readr::cols()) %>%
+  dplyr::mutate(tripletid=sapply(strsplit(tripletid, "_"),
+                                 function(x) x[2])) %>%
+  dplyr::mutate(listener_group=ifelse(subject_language == "English_turkers",
+                                      "English", "French"))
+pilot_b_meta <- readr::read_csv("data_timit_meta.csv",
+                                col_types=readr::cols())
+pilot_b_bottleneck <- readr::read_csv("data_timit_bottleneck.csv",
+                                      col_types=readr::cols()) %>%
+  dplyr::rename(bn_TGT=distance_TGT, bn_OTH=distance_OTH) %>%
+  dplyr::mutate(delta_bn=bn_TGT-bn_OTH, ratio_bn=bn_TGT/bn_OTH)
+pilot_b_mfcc <- readr::read_csv("data_timit_mfcc.csv",
+                                      col_types=readr::cols()) %>%
+  dplyr::rename(mfcc_TGT=distance_TGT, mfcc_OTH=distance_OTH) %>%
+  dplyr::mutate(delta_mfcc=mfcc_TGT-mfcc_OTH, ratio_mfcc=mfcc_TGT/mfcc_OTH)
+pilot_b <- dplyr::left_join(pilot_b_human, pilot_b_bottleneck, 
+                            by="tripletid") %>%
+  dplyr::left_join(pilot_b_mfcc, by="tripletid") %>%
+  dplyr::left_join(pilot_b_meta, by="tripletid") %>%
+  dplyr::mutate(user_corr=ifelse(presentation_order == "AB",
+                                 first_sound, second_sound))
+```
+
+```{r load-pilot-c, include=FALSE}
+pilot_c_human <- tibble::as_tibble(
+  read.csv("data_lab_human.csv", row.names=1)) %>%
+  dplyr::mutate(listener_group=subject_language.x)
+pilot_c_bottleneck <- readr::read_csv("data_lab_bottleneck.csv",
+                                      col_types=readr::cols()) %>%
+  dplyr::rename(bn_TGT=distance_TGT, bn_OTH=distance_OTH) %>%
+  dplyr::mutate(delta_bn=bn_TGT-bn_OTH, ratio_bn=bn_TGT/bn_OTH)
+pilot_c_mfcc <- readr::read_csv("data_lab_mfcc.csv",
+                                      col_types=readr::cols()) %>%
+  dplyr::rename(mfcc_TGT=distance_TGT, mfcc_OTH=distance_OTH) %>%
+  dplyr::mutate(delta_mfcc=mfcc_TGT-mfcc_OTH, ratio_mfcc=mfcc_TGT/mfcc_OTH)
+pilot_c <- dplyr::left_join(pilot_c_human, pilot_c_bottleneck, 
+                            by="tripletid") %>%
+  dplyr::left_join(pilot_c_mfcc, by="tripletid")
+```
+
+
+
+```{r models-accuracy-by-distance, include=FALSE}
+pilot_a_mfcc_m <- lme4::glmer(user_corr ~ delta_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_a, family="binomial")
+pilot_b_mfcc_m <- lme4::glmer(user_corr ~ delta_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_b, family="binomial")
+pilot_c_mfcc_m <- lme4::glmer(user_corr ~ delta_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_c, family="binomial")
+
+pilot_a_bn_m <- lme4::glmer(user_corr ~ delta_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_a, family="binomial")
+pilot_b_bn_m <- lme4::glmer(user_corr ~ delta_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_b, family="binomial")
+pilot_c_bn_m <- lme4::glmer(user_corr ~ delta_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c, family="binomial")
+pilot_a_mfcc_ratio_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_a, family="binomial")
+pilot_b_mfcc_ratio_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_b, family="binomial")
+pilot_c_mfcc_ratio_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_c, family="binomial")
+
+pilot_a_bn_ratio_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_a, family="binomial")
+pilot_b_bn_ratio_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_b, family="binomial")
+pilot_c_bn_ratio_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c, family="binomial")
+```
+
+
+```{r summary-by-triplet, include=FALSE}
+pilot_a_by_triplet <- pilot_a %>%
+  dplyr::group_by(listener_group, tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc,
+                  mfcc_TGT, mfcc_OTH, bn_TGT, bn_OTH) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc,
+                  mfcc_TGT, mfcc_OTH, bn_TGT, bn_OTH) %>%
+  dplyr::summarize(accuracy=mean(accuracy)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(Experiment="Pilot-a",
+        accuracy_pred_mfcc=boot::inv.logit(lme4::fixef(pilot_a_mfcc_m) %*%
+          rbind(1, delta_mfcc)),
+        accuracy_pred_bn=boot::inv.logit(lme4::fixef(pilot_a_bn_m) %*%
+          rbind(1, delta_bn)),
+        accuracy_pred_mfcc_ratio=boot::inv.logit(lme4::fixef(pilot_a_mfcc_ratio_m) %*%
+          rbind(1, ratio_mfcc)),
+        accuracy_pred_bn_ratio=boot::inv.logit(lme4::fixef(pilot_a_bn_ratio_m) %*%
+          rbind(1, ratio_bn)))
+
+pilot_b_by_triplet <- pilot_b %>%
+  dplyr::group_by(listener_group, tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc,
+                  mfcc_TGT, mfcc_OTH, bn_TGT, bn_OTH) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc,
+                  mfcc_TGT, mfcc_OTH, bn_TGT, bn_OTH) %>%
+  dplyr::summarize(accuracy=mean(accuracy)) %>%
+  dplyr::ungroup()  %>%
+  dplyr::mutate(Experiment="Pilot-b",
+        accuracy_pred_mfcc=boot::inv.logit((lme4::fixef(pilot_b_mfcc_m) %*%
+          rbind(1, delta_mfcc))),
+        accuracy_pred_bn=boot::inv.logit(lme4::fixef(pilot_b_bn_m) %*%
+          rbind(1, delta_bn)),
+        accuracy_pred_mfcc_ratio=boot::inv.logit(lme4::fixef(pilot_b_mfcc_ratio_m) %*%
+          rbind(1, ratio_mfcc)),
+        accuracy_pred_bn_ratio=boot::inv.logit(lme4::fixef(pilot_b_bn_ratio_m) %*%
+          rbind(1, ratio_bn)))
+pilot_c_by_triplet <- pilot_c %>%
+  dplyr::group_by(listener_group, tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc,
+                  mfcc_TGT, mfcc_OTH, bn_TGT, bn_OTH) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc,
+                  mfcc_TGT, mfcc_OTH, bn_TGT, bn_OTH) %>%
+  dplyr::summarize(accuracy=mean(accuracy)) %>%
+  dplyr::ungroup()  %>%
+  dplyr::mutate(Experiment="Pilot-c",
+        accuracy_pred_mfcc=boot::inv.logit(lme4::fixef(pilot_c_mfcc_m) %*%
+          rbind(1, delta_mfcc)),
+        accuracy_pred_bn=boot::inv.logit(lme4::fixef(pilot_a_bn_m) %*%
+          rbind(1, delta_bn)),
+        accuracy_pred_mfcc_ratio=boot::inv.logit(lme4::fixef(pilot_c_mfcc_ratio_m) %*%
+          rbind(1, ratio_mfcc)),
+        accuracy_pred_bn_ratio=boot::inv.logit(lme4::fixef(pilot_c_bn_ratio_m) %*%
+          rbind(1, ratio_bn)))
+pilots_by_triplet <- dplyr::bind_rows(
+  pilot_a_by_triplet, pilot_b_by_triplet, pilot_c_by_triplet
+)
+```
+
+We first simply plot the distances for the stimuli in the three experiments.
+
+```{r plots-tgt-vs-oth, echo=FALSE, fig.width=8, fig.height=4}
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=mfcc_TGT, y=mfcc_OTH)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_abline() +
+  ggplot2::geom_rug() +
+  ggplot2::ggtitle("MFCC distance to target vs distance to other") +
+  ggplot2::xlab("MFCC distance to target") +
+  ggplot2::ylab("MFCC distance to other") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment))
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=bn_TGT, y=bn_OTH)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_abline() +
+  ggplot2::geom_rug() +
+  ggplot2::ggtitle("Bottleneck distance to target vs distance to other") +
+  ggplot2::xlab("Bottleneck distance to target") +
+  ggplot2::ylab("Bottleneck distance to other") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment))
+```
+
+Pilot-a stimuli yield quite different values for both types of distances. Differences in the method for calculating MFCCs for Pilot-a may be responsible for the difference in MFCC distances, showing globally smaller values. The bottleneck features show a much wider range of values in Pilot-a than in the other two pilots. This may be because the Pilot-a stimuli were cross-lingual; if so, this is a good property of the bottleneck features: comparing stimuli in different languages leads to large distances Both the MFCC and the bottleneck features show smaller distances in Pilot-c than in Pilot-b. This could be because the stimuli are lab speech read syllables, rather than corpus extracts, and thus more tightly controlled on channel properties, on prosody, and on variations in the realization of the contextual phonemes. However, it could also be because in Pilot-c, there were only two speakers in total over the set of stimuli. That the distances capture speaker differences is probably not a welcome property.
+
+Another property of Pilot-c is that A and B were always the same speaker, unlike in the other two pilots. If we want the distances we use to emphasize  linguistic differences, rather than  speaker differences, then this should not have a systematic effect on the comparison between the target/other distances. To examine the comparative degree of deviance between target/X versus other/X in a way that does not reflect the effects just seen of the absolute scale of the distances across the three experiments, we divide the target/X distance by the other/X distance. (Were we to simply take the subtraction, the difference would scale up with the magnitude of the distances.)
+
+```{r plots-ratio, echo=FALSE, fig.width=8, fig.height=4}
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=ratio_mfcc)) +
+  ggplot2::geom_histogram(ggplot2::aes(
+    y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]
+  )) +
+  ggplot2::ggtitle("MFCC distance to target / other") +
+  ggplot2::xlab("MFCC distance to target / other") +
+  ggplot2::coord_cartesian(xlim=c(0.35, 2.05)) +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment))
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=ratio_bn)) +
+  ggplot2::geom_histogram(ggplot2::aes(
+    y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]
+  )) +
+  ggplot2::ggtitle("Bottleneck distance to target / other") +
+  ggplot2::xlab("Bottleneck distance to target / other") +
+  ggplot2::coord_cartesian(xlim=c(0.35, 2.05)) +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment))
+```
+
+What we observe is that, for the bottleneck features, the ratios are modally about the same size in the three experiments, but still closer to being equal (1.0) in Pilot-c. There is also  a substantial right tail in Pilot-a and Pilot-b and higher variance, which could reflect speaker varibility. Thus, in terms of speaker normalization, there is no clear advantage for the bottleneck features.
+
+In all three pilots, there is a clear advantage for the multilingual bottleneck features over MFCC features in predicting the human responses. We examine this first visually, grouping accuracy by triplet, averaging across the two listener groups. For consistency with the literature, we use the delta measure as a predictor.
+
+
+
+
+```{r plots-triplet-accuracy-by-distance, echo=FALSE, fig.width=8, fig.height=4}
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=ratio_mfcc, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line(ggplot2::aes(y=accuracy_pred_mfcc_ratio)) +
+  ggplot2::geom_vline(xintercept=1.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("MFCC ratios versus accuracy per triplet") +
+  ggplot2::xlab("MFCC ratio") +
+  ggplot2::ylab("Accuracy") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment), scale="free")
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=ratio_bn, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line(ggplot2::aes(y=accuracy_pred_bn_ratio)) +
+  ggplot2::geom_vline(xintercept=1.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("Bottleneck ratios versus accuracy per triplet") +
+  ggplot2::xlab("Bottleneck ratio") +
+  ggplot2::ylab("Accuracy") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment), scale="free")
+```
+
+
+In Pilot-a and Pilot-b, the bottleneck features reduce the comparative volume of the points for which the distances are ``backwards'' (distance to target is greater than distance to other, indicated by points to the right of the line at $x=1$). While it need not be the case that the zero point for these ratios need match humans' perceptual threshholds exactly, it is slightly reassuring that we are more able to maintain this simple view with the bottleneck features.
+
+Pilot-c is probably less interesting than the others, as the line suggests that stimuli are relatively uniform in their acoustic similarity, and that participants are already at ceiling. This is reflected in a small difference in overall accuracy in Pilot-c. 
+
+```{r overall-accuracy}
+mean(pilot_a_by_triplet$accuracy, na.rm=TRUE)
+mean(pilot_b_by_triplet$accuracy, na.rm=TRUE)
+mean(pilot_c_by_triplet$accuracy, na.rm=TRUE)
+```
+
+Notice also that, as much as it's true that the MBFs don't uniquely capture linguistic (rather than speaker) properties, the fact that the human accuracies are globally higher in Pilot-c, which had speakers AB-X rather than A-B-X, is an apparent effect of the task setup - that is, people find the task easier when A and B are the same speaker - that goes unexplained by the calculated distances between target/X and other/X.
+
+
+```{r plots-triplet-accuracy-by-distance-fixed, echo=FALSE, fig.width=8, fig.height=4}
+ggplot2::ggplot(pilots_by_triplet, ggplot2::aes(x=ratio_bn, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line(ggplot2::aes(y=accuracy_pred_bn_ratio)) +
+  ggplot2::geom_smooth() +
+  ggplot2::geom_vline(xintercept=1.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("Bottleneck ratios versus accuracy per triplet") +
+  ggplot2::xlab("Bottleneck ratio") +
+  ggplot2::ylab("Accuracy") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment))
+```
+
+A better assessment of the utility of these features is provided by comparing AIC scores on a logistic model on the unaggregated data. These always come out in favour of the bottleneck features:
+
+
+```{r model-comparison-mfcc-bottleneck}
+(AIC(pilot_a_bn_ratio_m) - AIC(pilot_a_mfcc_ratio_m))/nobs(pilot_a_bn_ratio_m)
+(AIC(pilot_b_bn_ratio_m) - AIC(pilot_b_mfcc_ratio_m))/nobs(pilot_b_bn_ratio_m)
+(AIC(pilot_c_bn_ratio_m) - AIC(pilot_c_mfcc_ratio_m))/nobs(pilot_c_bn_ratio_m)
+```
+
+Because we want to make sure that we have the best way of calculating the relative distance, we also compare the predictiveness of the difference method (delta) and the ratio method (ratio). 
+
+```{r model-comparison-delta-ratio}
+(AIC(pilot_a_bn_ratio_m) - AIC(pilot_a_bn_m))/nobs(pilot_a_bn_m)
+(AIC(pilot_b_bn_ratio_m) - AIC(pilot_b_bn_m))/nobs(pilot_b_bn_m)
+(AIC(pilot_c_bn_ratio_m) - AIC(pilot_c_bn_m))/nobs(pilot_c_bn_m)
+(AIC(pilot_a_mfcc_ratio_m) - AIC(pilot_a_mfcc_m))/nobs(pilot_a_mfcc_m)
+(AIC(pilot_b_mfcc_ratio_m) - AIC(pilot_b_mfcc_m))/nobs(pilot_b_mfcc_m)
+(AIC(pilot_c_mfcc_ratio_m) - AIC(pilot_c_mfcc_m))/nobs(pilot_c_mfcc_m)
+```
+
+There is no clear evidence that it matters. For the bottleneck features, there would seem to be a slight advantage for the difference method in Pilot-a and Pilot-c, but not in Pilot-b; for the MFCC features, it's the reverse. Given the problems of scale, it seems safer to make predictions for future experiments using the ratio method.
+
+Because we would like the effect of acoustic distance to be relatively stable across listener groups, we also assess how differently the distances behave for our English and French listeners. We begin graphically:
+
+```{r models-accuracy-by-distance-by-listener, include=FALSE}
+pilot_a_mfcc_en_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_a[pilot_a$listener_group=="English",], family="binomial")
+pilot_b_mfcc_en_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_b[pilot_b$listener_group=="English",], family="binomial")
+pilot_c_mfcc_en_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_c[pilot_c$listener_group=="English",], family="binomial")
+
+pilot_a_mfcc_fr_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_a[pilot_a$listener_group=="French",], family="binomial")
+pilot_b_mfcc_fr_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_b[pilot_b$listener_group=="French",], family="binomial")
+pilot_c_mfcc_fr_m <- lme4::glmer(user_corr ~ ratio_mfcc + (1|tripletid) + (1|subject_id),
+                              data=pilot_c[pilot_c$listener_group=="French",], family="binomial")
+
+pilot_a_bn_en_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_a[pilot_a$listener_group=="English",], family="binomial")
+pilot_b_bn_en_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_b[pilot_b$listener_group=="English",], family="binomial")
+pilot_c_bn_en_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c[pilot_c$listener_group=="English",], family="binomial")
+
+pilot_a_bn_fr_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_a[pilot_a$listener_group=="French",], family="binomial")
+pilot_b_bn_fr_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_b[pilot_b$listener_group=="French",], family="binomial")
+pilot_c_bn_fr_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c[pilot_c$listener_group=="French",], family="binomial")
+```
+
+
+```{r summary-by-triplet-by-listener, include=FALSE}
+pilot_a_by_triplet_by_listener <- pilot_a %>%
+  dplyr::group_by(listener_group, tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(Experiment="Pilot-a",
+        accuracy_pred_mfcc=ifelse(listener_group == "English",
+                                  boot::inv.logit(lme4::fixef(pilot_a_mfcc_en_m) %*%
+                                  rbind(1, ratio_mfcc)), 
+                                  boot::inv.logit(lme4::fixef(pilot_a_mfcc_fr_m) %*%
+                                  rbind(1, ratio_mfcc))),
+        accuracy_pred_bn=ifelse(listener_group == "English",
+                                  boot::inv.logit(lme4::fixef(pilot_a_bn_en_m) %*%
+                                  rbind(1, ratio_bn)), 
+                                  boot::inv.logit(lme4::fixef(pilot_a_bn_fr_m) %*%
+                                  rbind(1, ratio_bn))))
+pilot_b_by_triplet_by_listener <- pilot_b %>%
+  dplyr::group_by(listener_group, tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup()  %>%
+  dplyr::mutate(Experiment="Pilot-b",
+        accuracy_pred_mfcc=ifelse(listener_group == "English",
+                                  boot::inv.logit(lme4::fixef(pilot_b_mfcc_en_m) %*%
+                                  rbind(1, ratio_mfcc)), 
+                                  boot::inv.logit(lme4::fixef(pilot_b_mfcc_fr_m) %*%
+                                  rbind(1, ratio_mfcc))),
+        accuracy_pred_bn=ifelse(listener_group == "English",
+                                  boot::inv.logit(lme4::fixef(pilot_b_bn_en_m) %*%
+                                  rbind(1, ratio_bn)), 
+                                  boot::inv.logit(lme4::fixef(pilot_b_bn_fr_m) %*%
+                                  rbind(1, ratio_bn))))
+pilot_c_by_triplet_by_listener <- pilot_c %>%
+  dplyr::group_by(listener_group, tripletid, delta_bn, delta_mfcc,
+                  ratio_bn, ratio_mfcc) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(Experiment="Pilot-c",
+        accuracy_pred_mfcc=ifelse(listener_group == "English",
+                                  boot::inv.logit(lme4::fixef(pilot_c_mfcc_en_m) %*%
+                                  rbind(1, ratio_mfcc)), 
+                                  boot::inv.logit(lme4::fixef(pilot_c_mfcc_fr_m) %*%
+                                  rbind(1, ratio_mfcc))),
+        accuracy_pred_bn=ifelse(listener_group == "English",
+                                  boot::inv.logit(lme4::fixef(pilot_c_bn_en_m) %*%
+                                  rbind(1, ratio_bn)), 
+                                  boot::inv.logit(lme4::fixef(pilot_c_bn_fr_m) %*%
+                                  rbind(1, ratio_bn))))
+pilots_by_triplet_by_listener <- dplyr::bind_rows(
+  pilot_a_by_triplet_by_listener, pilot_b_by_triplet_by_listener,
+  pilot_c_by_triplet_by_listener
+)
+```
+
+```{r plots-triplet-accuracy-by-distance-by-listener, echo=FALSE, fig.width=8, fig.height=4}
+ggplot2::ggplot(pilots_by_triplet_by_listener, ggplot2::aes(x=ratio_mfcc, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line(ggplot2::aes(y=accuracy_pred_mfcc)) +
+  ggplot2::geom_vline(xintercept=1.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("MFCC ratios versus accuracy per triplet") +
+  ggplot2::xlab("MFCC ratio") +
+  ggplot2::ylab("Accuracy") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment),
+                      rows=ggplot2::vars(listener_group))
+ggplot2::ggplot(pilots_by_triplet_by_listener, ggplot2::aes(x=ratio_bn, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line(ggplot2::aes(y=accuracy_pred_bn)) +
+  ggplot2::geom_vline(xintercept=1.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("Bottleneck ratios versus accuracy per triplet") +
+  ggplot2::xlab("Bottleneck ratio") +
+  ggplot2::ylab("Accuracy") +
+  ggplot2::facet_grid(cols=ggplot2::vars(Experiment),
+                      rows=ggplot2::vars(listener_group))
+```
+
+Visually, the effects appear similar across groups regardless of what distance we use. Attempts to determine whether one feature set shows reduced native-language/acoustic distance interactions (not shown) were inconclusive, with results inconsistent across the three experiments.
+
+**Conclusion:** The MBF based acoustic distance calculation has the clear advantage over the MFCC features of better explaining the variance in listener responses, and the disputable advantage of reducing the relative volume of triplet stimuli that yield unexpected backwards delta values. 
+
+
+### Validation of acoustic distance threshholds for ceiling effects
+
+Since it's imperative that we avoid ceiling effects, we would like to pick a threshhold on the ratios that gives listeners substantial room for improvement and for variability.
+
+The previous experiments differ on a few dimensions that lead to differences in absolute accuracy - they are crosslinguistic or not, they use A-B-X speaker presentation or AB-X, as well as other properties of the stimuli; and there are sub-experiments involving different listener groups. This leads us to the fact that it doesn't make sense to just look for a universal cutoff, because the new experiment will have a different baseline accuracy. In order to get a sense of how difficult the new triplets will be in absolute terms, you have to try and imagine what the baseline accuracy should look like.
+
+In some respects the most similar experiment would be Pilot-a. In Pilot-a, the stimuli were crosslinguistic in the same way that our new experiment will be: they always contained one sound that was native for the listeners, and one sound that wasn't. The stimuli were also similar in that they were lab speech. The stimuli were different from the new ones, on the other hand, in that in Pilot-a, X was always a stimulus "from a different language", that is, the whole thing had a completely different phonology than the A and B stimuli. This won't be the case in the new stimuli, which are all Hindi.
+
+[this would be a good point to look at the new acoustic distances in a plot like the ones above, bn_TGT vs bn_OTH, to see if they look more like Pilot-A or Pilot-B in terms of their scale; I'd hope they look more like Pilot-B]
+
+It would be surprising if the Pilot-a results suffered a major negative baseline effect of this cross-linguistic stimulus construction, as opposed to just the fact that the comparison was always native versus non-native. If anything, the cross-linguistic stimuli  gave the listeners additional cues to the right answer, because the contextual phonemes varied systematically across languages, even though they were supposedly matched. Thus we might expect the new baseline level to be roughly along the lines of Pilot-a, which had the same native/non-native structure, or maybe a bit worse, because the stimuli will be better controlled and not have the cross-linguistic property.
+ 
+The new stimuli will involve consonant contrasts, like some of the Pilot-c stimuli. However, there isn't evidence to suggest a clear baseline difference between consonant and vowel stimuli: the French listeners in Pilot-c showed such a difference, but the English listeners didn't.
+
+```{r models-accuracy-pilot-c-cv, include=FALSE}
+pilot_c_bn_en_c_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c[pilot_c$listener_group=="English" &
+                                           pilot_c$CV_X == "C",], family="binomial")
+pilot_c_bn_en_v_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c[pilot_c$listener_group=="English" &
+                                           pilot_c$CV_X == "V",], family="binomial")
+pilot_c_bn_fr_c_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c[pilot_c$listener_group=="French" &
+                                           pilot_c$CV_X == "C",], family="binomial")
+pilot_c_bn_fr_v_m <- lme4::glmer(user_corr ~ ratio_bn + (1|tripletid) + (1|subject_id),
+                            data=pilot_c[pilot_c$listener_group=="French" &
+                                           pilot_c$CV_X == "V",], family="binomial")
+```
+
+
+```{r summary-by-triplet-by-listener-by-cv, include=FALSE}
+pilot_c_by_triplet_by_listener_by_cv <- pilot_c %>%
+  dplyr::group_by(listener_group, tripletid, CV_X, ratio_bn) %>%
+  dplyr::summarize(accuracy=mean(user_corr)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(Experiment="Pilot-c",
+        accuracy_pred_bn=ifelse(listener_group == "English" & CV_X == "C",
+                                  boot::inv.logit(lme4::fixef(pilot_c_bn_en_c_m) %*%
+                                  rbind(1, ratio_bn)), 
+                                ifelse(listener_group == "English" & CV_X == "V",
+                                    boot::inv.logit(lme4::fixef(pilot_c_bn_en_v_m) %*%
+                                  rbind(1, ratio_bn)), 
+                                  ifelse(listener_group == "French" & CV_X == "C",
+                                    boot::inv.logit(lme4::fixef(pilot_c_bn_fr_c_m) %*%
+                                  rbind(1, ratio_bn)),
+                                    boot::inv.logit(lme4::fixef(pilot_c_bn_fr_v_m) %*%
+                                  rbind(1, ratio_bn))))))
+```
+
+```{r plots-triplet-accuracy-by-distance-by-listener-cv, echo=FALSE, fig.width=8, fig.height=4}
+ggplot2::ggplot(pilot_c_by_triplet_by_listener_by_cv, ggplot2::aes(x=ratio_bn, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_line(ggplot2::aes(y=accuracy_pred_bn)) +
+  ggplot2::geom_smooth() +
+  ggplot2::geom_rug() +
+  ggplot2::geom_vline(xintercept=1.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("Bottleneck ratios versus accuracy per triplet") +
+  ggplot2::xlab("Bottleneck ratio") +
+  ggplot2::ylab("Accuracy") +
+  ggplot2::facet_grid(cols=ggplot2::vars(CV_X),
+                      rows=ggplot2::vars(listener_group))
+```
+
+```{r overall-accuracy-cv}
+pilot_c_by_triplet_by_listener_by_cv %>%
+  dplyr::group_by(listener_group, CV_X) %>%
+  dplyr::summarize(accuracy=mean(accuracy)) %>%
+  dplyr::ungroup()
+```
+
+To be adversarial, the best is probably to assume the worst: assume that the baseline in our task is worse than it probably will be. Thus, even though the baseline in the new experiment will likely be comparable to Pilot-a, it would be best to plan for it to be more like Pilot-c, the easiest of the three. Unfortunately, if we do this, then we will most likley be left with no stimuli: the French group, anyway, is already practically at ceiling in the consonant condition for MBF ratios equal to 1. 
+
+## Construction of Hindi stimuli
+
+[...]
+
+## Selection of stimuli
+Selection of triplet stimuli is based on four things: 
+
+1) acoustic distances 
+     a) distance to target <  distance to other 
+     b) ratio of differences is not so large as to create only ceiling performance
+         --> currently: log ratio is > -.4)
+     
+2) GEOMPHON scores 
+    c) prefer triplest Econ, Glob, Loc as uncorrelated as possible in order to improve model performance 
+    
+3) Domain knowledge 
+    d) rule out stimuli that do not sound good to phoneticians 
+         -->remove velar fricatives, which were not native to our speaker's dialects
+    e) attempt to balance stimuli by linguistic categories 
+         --> sample one instance from each phone pair before further sampling to arrive at 150 stimuli
+         
+4)expeirmental balance
+   f) once all above filters have been applied to select pairs, list of triplets is submitted to 
+   simulated annealar script which will optimize a stimuli list that  has the best combinations 
+   that decorrelate speaker combination from phone pair.
+    
+```{r hindi_stim_selection, echo = FALSE, messages = FALSE}
+hindi_design_long <- readr::read_csv("hindi_design_long.csv")
+hindi_design_long <- dplyr::mutate(hindi_design_long,response_var = 0) %>%
+                     dplyr::mutate(., ratio_distance=distance_TGT/distance_OTH) %>%
+                     dplyr::filter(., phone_TGT != "ɣ"& phone_OTH != "ɣ" & phone_X != "ɣ") %>%
+                     dplyr::filter(., phone_TGT != "x"& phone_OTH != "x" & phone_X != "x")
+
+
+proposed_hindi <- dplyr::filter(hindi_design_long,distance_OTH>distance_TGT) %>%
+                   dplyr::mutate(., ratio_distance=distance_TGT/distance_OTH) %>% 
+                   dplyr::mutate(., log_ratio_distance= log(distance_TGT/distance_OTH))%>%
+                   dplyr::filter(., log_ratio_distance > -.4) %>%
+                   dplyr::mutate(., phone_pair =paste0(as.character(phone_TGT),
+                                      "_",
+                                      as.character(phone_OTH))) %>%
+                   dplyr::group_by(., phone_pair)%>%
+                   dplyr::sample_n(size = 1) %>%
+                   dplyr::ungroup() %>%
+                   dplyr::sample_n(size = 150)
+                   
+
+```
+
+sample accuracy data based on coefficient drawn from pilot experiments, visualize accuracy vs. distances ratio
+
+```{r proposed_stim_sampling}
+
+mean_intercept <- mean(lme4::fixef(pilot_a_bn_ratio_m)[[1]],
+                       lme4::fixef(pilot_b_bn_ratio_m)[[1]],
+                       lme4::fixef(pilot_c_bn_ratio_m)[[1]])
+
+mean_coef_dist <- mean(lme4::fixef(pilot_a_bn_ratio_m)[[2]],
+                       lme4::fixef(pilot_b_bn_ratio_m)[[2]],
+                       lme4::fixef(pilot_c_bn_ratio_m)[[2]])
+  
+long_hindi_m <- glm(response_var~ratio_distance, data=hindi_design_long, family="binomial", maxit = 100)
+    long_hindi_m$coefficients["(Intercept)"]<- mean_intercept
+    long_hindi_m$coefficients["ratio_distance"] <- mean_coef_dist
+  
+##### repeat design for N subjects and add summary accuracy score
+NUM_SUBJS = 60
+
+long_hindi_subjs<- hindi_design_long[rep(1:nrow(hindi_design_long),NUM_SUBJS),]
+
+    subjs<- c()
+      for (i in (1:NUM_SUBJS)) {
+        subjs[i] = paste("subject",i,sep = "_")
+      }
+
+subjs_rep<-as.data.frame(rep.int(subjs,nrow(hindi_design_long)))
+names(subjs_rep)<-c("subject")
+
+long_hindi_subjs <- dplyr::bind_cols(subjs_rep,long_hindi_subjs)
+
+pred_prob <- predict(long_hindi_m, type="response", newdata=long_hindi_subjs)
+    
+      for (i in 1:nrow(long_hindi_subjs)) {
+          long_hindi_subjs[["response_var"]][i] <- sample(c(0,1), 1,
+                                         prob=c((1-pred_prob[i]), pred_prob[i]))
+        }
+
+
+long_hindi_acc_by_phone_pair <- long_hindi_subjs %>%
+  dplyr::mutate(., phone_pair =paste0(as.character(phone_TGT),
+                                      "_",
+                                      as.character(phone_OTH))) %>%
+  dplyr::mutate(., log_ratio_distance=log(distance_TGT/distance_OTH)) %>%
+  dplyr::mutate(., ratio_distance=distance_TGT/distance_OTH) %>%
+  dplyr::group_by(.,phone_pair,log_ratio_distance,ratio_distance) %>%
+  dplyr::summarize(accuracy=mean(response_var))
+
+                
+ggplot2::ggplot(long_hindi_acc_by_phone_pair, ggplot2::aes(x=log_ratio_distance, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth()+
+  ggplot2::geom_vline(xintercept=0.0) +
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("Log distance ratios versus accuracy by phone pair") +
+  ggplot2::xlab("log (distance ratio)") +
+  ggplot2::ylab("Accuracy") 
+
+
+
+
+prop_hindi_m <- glm(response_var~ratio_distance, data=proposed_hindi, family="binomial", maxit = 100)
+    prop_hindi_m$coefficients["(Intercept)"]<- mean_intercept
+    prop_hindi_m$coefficients["ratio_distance"] <- mean_coef_dist
+  
+##### repeat design for N subjects and add summary accuracy score
+NUM_SUBJS = 60
+
+prop_hindi_subjs<- proposed_hindi[rep(1:nrow(proposed_hindi),NUM_SUBJS),]
+
+    subjs<- c()
+      for (i in (1:NUM_SUBJS)) {
+        subjs[i] = paste("subject",i,sep = "_")
+      }
+
+subjs_rep<-as.data.frame(rep.int(subjs,nrow(proposed_hindi)))
+names(subjs_rep)<-c("subject")
+
+prop_hindi_subjs <- dplyr::bind_cols(subjs_rep,prop_hindi_subjs)
+
+pred_prob <- predict(prop_hindi_m, type="response", newdata=prop_hindi_subjs)
+    
+      for (i in 1:nrow(prop_hindi_subjs)) {
+          prop_hindi_subjs[["response_var"]][i] <- sample(c(0,1), 1,
+                                         prob=c((1-pred_prob[i]), pred_prob[i]))
+        }
+
+prop_hindi_acc_by_phone_pair <- prop_hindi_subjs %>%
+  dplyr::mutate(., phone_pair =paste0(as.character(phone_TGT),
+                                      "_",
+                                      as.character(phone_OTH))) %>%
+  dplyr::mutate(., log_ratio_distance=log(distance_TGT/distance_OTH)) %>%
+  dplyr::mutate(., ratio_distance=distance_TGT/distance_OTH) %>%
+  dplyr::group_by(.,phone_pair,log_ratio_distance,ratio_distance) %>%
+  dplyr::summarize(accuracy=mean(response_var))
+
+                
+ggplot2::ggplot(prop_hindi_acc_by_phone_pair, ggplot2::aes(x=log_ratio_distance, y=accuracy)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth()+
+  ggplot2::geom_vline(xintercept=0.0) +
+  ggplot2::geom_text(ggplot2::aes(label=phone_pair))+
+  ggplot2::geom_hline(yintercept=0.5) +
+  ggplot2::ggtitle("Log distance ratios versus accuracy by phone pair") +
+  ggplot2::xlab("log (distance ratio)") +
+  ggplot2::ylab("Accuracy") 
+
+
+```
+
+
+## Final detailed design
+
+[...]
+
+## Predictions
+
+[...]
+
+
+
