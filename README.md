@@ -1,10 +1,7 @@
 # ABX-exp-pipeline
-README.md
 
 
-#ABX perception experiments
-
-This folder contains everything necessary to launch the geomphon ABX experiments and clean and analyse the data.
+This folder contains everything necessary to launch the geomphon ABX experiments, validate the models and design, and clean and analyse the data.
 
 
 ### Required packages and libraries
@@ -119,20 +116,16 @@ There are five parts to this pipeline.  All parts have commands in the makefile,
 	-generates a list of all possible three-file combinations (= "triplets")
 	-finds an optimized subset  of these triplets (to save doing calculations on all of them)
 	-caculates acoustic distances between files for each of the subset of triplets
-	-optimizes a stimuli list of length 150 of the subset of triplets
-	-concatenates soundfiles to create an audio file for each of the 150 selected triplets
-#FIXME-check?	-saves that audiofile as .mp3 and .ogg for later use in the experiment
+	-selects the phones of interest based on their average acoustic distance. 
+	-optimizes a stimuli list based on the phones of interest, selects specific triplet instances. 
+	-concatenates soundfiles to create an audio file for each of the selected triplets
 
 
-##2. 2_validation
-#takes the design above and tests the model used 
- ##geomphon scores 
-geomphon scores are calculated following  Dunbar & Dupoux 2016 (https://www.frontiersin.org/articles/10.3389/fpsyg.2016.01061/full#h9). 
-code for these calculations is 
-https://github.com/bootphon/contrastive-symmetry/
-The setup in this folder assumes that you already have geomphon scores(or other predictors of interest)
-and that they are present in the form of file 
-#FIXME--> add filename here. 
+## 2. 2_validation
+takes the design above and tests the model used.  
+
+
+
 
 
 ## 3. 3_LMEDs 
@@ -142,41 +135,34 @@ For experiment creation:
 Experiments are accomplished using  our fork of LMEDS 
 
 clone our fork of LMEDs, 
-then (optionally) adjust the following documents: 
+then adjust the following documents: 
 	presurvey.txt. (a demographic survey for the beginning of the experiment)
 	postsurvey.txt (a post-experiment survey)
 	dictionary.txt (all strings to be shown (e.g. instructions) that are not in the surveys above must be listed in this document)
 	sequence file  (this specifies the order of how instructions, surveys, and stimuli are presented, including randomization)
 
 
-add your stimuli in 
-	FOLDER
-
-put the entire LMEDs file on a server (or run locally, see LMEDs manual here:______)
+put the entire LMEDs file on a server (or run locally, see LMEDs manual here: https://github.com/timmahrt/LMEDS
 	adjust the cgi file 
 	adjust your server permissions 
 		.cgi folder should have execute permissions 
-		output folders  should have write permission 
+		output folders should have write permission 
 
 
 ## 4. 4_results 
-#results anonymization and cleaning 
+This folder contains scripts used for results anonymization and cleaning 
 
 input:  
   folder of raw data downloaded from LMEDs OR folder of anonymized data 
-  download the folder of LMEDS results files from the server and put it in folder #FIXME_____
+  download the folder of LMEDS results files from the server
 
  if necessary: anonymize data 
 	change subject info using anonymize_lmeds_data_filenames.py
-	(be careful to store raw data or anonymization key in a secure locaiton (i.e. not synced to your git!))
+	(be careful to store raw data or anonymization key in a secure locaiton (i.e. not synced to your git))
 	**NB if you are using mechanical turk workers, their worker ID will be visible, and is considered individually identifiable information**
 
 filter and clean data 
- 	currently data is filtered on the following things: 
 
 
 
-## 5. 5_model
-#modeling  and visualization
 
- Results are modeled in a bayesian
